@@ -1,0 +1,29 @@
+# Render Blueprint - Especificación de Arquitectura y Producto (SRS)
+# Aplicación Web de Asistencia Financiera, Presupuesto Dinámico y Proyección de Metas
+
+databases:
+  - name: kuota-postgres-db
+    databaseName: kuota
+    user: kuota_admin
+    plan: free
+
+services:
+  - type: web
+    name: kuota-financial-assistant
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kuota-postgres-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false

@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum IncomeMode {
+  FIXED
+  INFORMAL
+}
+
+enum CycleType {
+  BIWEEKLY
+  MONTHLY
+}
+
+enum SalaryFrequency {
+  BIWEEKLY
+  MONTHLY
+  ANNUAL
+}
+
+enum CycleStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum ExpenseFrequency {
+  BIWEEKLY
+  MONTHLY
+  ONCE
+}
+
+enum DurationUnit {
+  DAYS
+  WEEKS
+  MONTHS
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+}
+
+enum ChecklistStatus {
+  ON_TRACK
+  OVER_BUDGET
+  SAVED_EXTRA
+}
+
+model User {
+  id                  String             @id @default(uuid())
+  email               String             @unique
+  name                String             @default("Usuario")
+  password_hash       String
+  currency            String             @default("COP")
+  income_mode         IncomeMode         @default(FIXED)
+  cycle_type          CycleType          @default(MONTHLY)
+  fixed_salary_amount Decimal            @default(0) @db.Decimal(12, 2)
+  salary_frequency    SalaryFrequency    @default(MONTHLY)
+  weekend_percentage  Int                @default(55)
+  onboarding_done     Boolean            @default(false)
+  created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+
+  income_cycles       IncomeCycle[]
+  mandatory_expenses  MandatoryExpense[]
+  savings_goals       SavingsGoal[]
+
+  @@map("users")
+}
+
+model IncomeCycle {
+  id                  String              @id @default(uuid())
+  user_id             String
+  period_name         String              @default("")
+  start_date          DateTime
+  end_date            DateTime
+  declared_income     Decimal             @db.Decimal(12, 2)
+  status              CycleStatus         @default(ACTIVE)
+  created_at          DateTime            @default(now())
+  updated_at          DateTime            @updatedAt
+
+  user                User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  mandatory_expenses  MandatoryExpense[]
+  tracking_checklists TrackingChecklist[]
+
+  @@index([user_id])
+  @@map("income_cycles")
+}
+
+model MandatoryExpense {
+  id           String           @id @default(uuid())
+  user_id      String
+  cycle_id     String?
+  name         String
+  category     String           @default("General")
+  amount       Decimal          @db.Decimal(12, 2)
+  frequency    ExpenseFrequency @default(MONTHLY)
+  is_recurring Boolean          @default(true)
+  is_paid      Boolean          @default(false)
+  created_at   DateTime         @default(now())
+  updated_at   DateTime         @updatedAt
+
+  user         User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  cycle        IncomeCycle?     @relation(fields: [cycle_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([cycle_id])
+  @@map("mandatory_expenses")
+}
+
+model SavingsGoal {
+  id                  String              @id @default(uuid())
+  user_id             String
+  product_name        String
+  target_amount       Decimal             @db.Decimal(12, 2)
+  saved_amount        Decimal             @default(0) @db.Decimal(12, 2)
+  duration_value      Int
+  duration_unit       DurationUnit        @default(MONTHS)
+  priority            Int                 @default(1)
+  allocation_pct      Decimal             @default(100) @db.Decimal(5, 2)
+  is_primary          Boolean             @default(true)
+  status              GoalStatus          @default(ACTIVE)
+  start_date          DateTime            @default(now())
+  target_date         DateTime
+  created_at          DateTime            @default(now())
+  updated_at          DateTime            @updatedAt
+
+  user                User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  tracking_checklists TrackingChecklist[]
+
+  @@index([user_id])
+  @@map("savings_goals")
+}
+
+model TrackingChecklist {
+  id            String          @id @default(uuid())
+  goal_id       String
+  cycle_id      String
+  period_label  String
+  period_type   String          @default("WEEKLY")
+  period_days   Int             @default(7)
+  budget_limit  Decimal         @db.Decimal(12, 2)
+  actual_spent  Decimal         @db.Decimal(12, 2)
+  deviation     Decimal         @default(0) @db.Decimal(12, 2)
+  status        ChecklistStatus
+  days_impact   Decimal         @db.Decimal(10, 2)
+  notes         String?
+  recorded_at   DateTime        @default(now())
+  created_at    DateTime        @default(now())
+
+  goal          SavingsGoal     @relation(fields: [goal_id], references: [id], onDelete: Cascade)
+  cycle         IncomeCycle     @relation(fields: [cycle_id], references: [id], onDelete: Cascade)
+
+  @@index([goal_id])
+  @@index([cycle_id])
+  @@map("tracking_checklists")
+}

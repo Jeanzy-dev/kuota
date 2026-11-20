@@ -1,0 +1,63 @@
+{
+  "name": "kuota-financial-assistant",
+  "version": "1.0.0",
+  "description": "Aplicación Web de Asistencia Financiera, Presupuesto Dinámico y Proyección de Metas (SRS)",
+  "main": "dist/server/index.js",
+  "scripts": {
+    "dev": "concurrently -k \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "tsx watch src/server/index.ts",
+    "dev:client": "vite",
+    "build": "npm run prisma:generate && npm run build:client && npm run build:server",
+    "build:client": "vite build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "start": "node dist/server/index.js",
+    "render:build": "npm install --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate deploy",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "decimal.js": "^10.4.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.460.0",
+    "pg": "^8.13.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.13.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.14",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.9.0",
+    "@types/pg": "^8.11.10",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.0",
+    "postcss": "^8.4.49",
+    "prisma": "^5.22.0",
+    "supertest": "^7.0.0",
+    "@types/supertest": "^6.0.2",
+    "tailwindcss": "^3.4.15",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
