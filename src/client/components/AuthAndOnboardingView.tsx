@@ -248,19 +248,6 @@ export const AuthAndOnboardingView: React.FC<AuthAndOnboardingProps> = ({
                   {loading ? 'Ingresando...' : 'Iniciar Sesión'}
                   <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
                 </button>
-
-                <div className="pt-4 border-t border-[#27272A]">
-                  <button
-                    type="button"
-                    onClick={handleDemoLogin}
-                    disabled={loading}
-                    data-testid="demo-login-btn"
-                    className="w-full py-2 px-3 rounded-lg bg-[#09090B] hover:bg-zinc-900 border border-[#27272A] text-zinc-300 text-xs font-medium transition flex items-center justify-center gap-2"
-                  >
-                    <Wallet className="w-4 h-4 text-zinc-500" strokeWidth={1.5} />
-                    Probar con Cuenta Demo
-                  </button>
-                </div>
               </form>
             ) : (
               <form onSubmit={handleRegister} className="space-y-4">
