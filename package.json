@@ -9,7 +9,7 @@
     "dev:client": "vite",
     "build": "npm run prisma:generate && npm run build:client && npm run build:server",
     "build:client": "vite build",
-    "build:server": "tsc -p tsconfig.server.json",
+    "build:server": "tsc -p tsconfig.server.json && npx esbuild src/server/vercel-entry.ts --bundle --platform=node --target=node20 --format=cjs --external:@electric-sql/pglite --outfile=api/index.js",
     "start": "node dist/server/index.js",
     "render:build": "npm install --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build",
     "prisma:generate": "npx prisma generate",

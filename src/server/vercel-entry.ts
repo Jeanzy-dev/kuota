@@ -1,12 +1,11 @@
 import type { IncomingMessage, ServerResponse } from 'http';
+import { app, ensureDemoSeedData } from './index';
+import { db } from './db';
 
 let isInitialized = false;
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   try {
-    const { app, ensureDemoSeedData } = await import('../src/server/index');
-    const { db } = await import('../src/server/db');
-
     if (!isInitialized) {
       await db.init();
       await ensureDemoSeedData().catch((seedErr: any) => {
@@ -22,7 +21,6 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     res.end(
       JSON.stringify({
         error: err?.message || 'Error interno en la función Serverless de Vercel',
-        stack: err?.stack,
       })
     );
   }

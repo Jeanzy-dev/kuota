@@ -254,8 +254,8 @@ class DatabaseManager {
       return { rows: res.rows as T[], rowCount: res.rowCount || 0 };
     }
     if (this.pglite) {
-      const res = await this.pglite.query<T>(sql, params);
-      return { rows: res.rows, rowCount: res.rows.length };
+      const res = await this.pglite.query(sql, params);
+      return { rows: res.rows as T[], rowCount: res.rows.length };
     }
     throw new Error('Base de datos no inicializada');
   }
