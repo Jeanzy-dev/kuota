@@ -217,7 +217,7 @@ export async function startServer(port = Number(process.env.PORT || 3000)) {
   });
 }
 
-if (require.main === module) {
+if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
   startServer().catch((err) => {
     console.error('Error fatal al iniciar servidor:', err);
     process.exit(1);
