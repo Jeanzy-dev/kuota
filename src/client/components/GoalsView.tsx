@@ -39,14 +39,21 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
     durationUnit
   ).toNumber();
   const previewPrice = Number(targetAmount) || 0;
-  const previewADR = previewDTM > 0 ? previewPrice / previewDTM : 0;
+  const previewInitialSaved = Math.max(0, Number(savedAmount) || 0);
+  const previewNetToFinance = Math.max(0, previewPrice - previewInitialSaved);
+  const previewADR = previewDTM > 0 ? previewNetToFinance / previewDTM : 0;
   const previewCycleRequired = previewADR * analysis.cycleDays;
+  const previewAllocation = Math.max(1, Math.min(100, Number(allocationPct) || 100));
+  const previewAllocatedIND = (analysis.netAvailableIncome * previewAllocation) / 100;
   const previewViable =
     analysis.netAvailableIncome > 0 &&
-    previewCycleRequired <= analysis.netAvailableIncome;
+    previewCycleRequired <= previewAllocatedIND;
   const minRealisticDays =
-    analysis.netAvailableIncome > 0
-      ? Math.ceil(previewPrice / (analysis.netAvailableIncome / analysis.cycleDays))
+    previewAllocatedIND > 0
+      ? Math.max(
+          1,
+          Math.ceil(previewNetToFinance / (previewAllocatedIND / analysis.cycleDays))
+        )
       : previewDTM;
 
   const handleCreateGoal = async (e: React.FormEvent) => {
@@ -262,12 +269,17 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
           >
             <div className="flex flex-wrap items-center justify-between gap-2 font-medium">
               <span>
-                Plazo (DTM): {previewDTM} días · Cuota diaria (ADR):{' '}
-                <strong className="text-white">{formatCurrency(previewADR, cur)}/día</strong> · Por ciclo:{' '}
-                <strong className="text-white">{formatCurrency(previewCycleRequired, cur)}</strong>
+                Plazo (DTM): {previewDTM} días · Por financiar:{' '}
+                <strong className="text-white">{formatCurrency(previewNetToFinance, cur)}</strong> ·
+                Cuota diaria (ADR):{' '}
+                <strong className="text-white">{formatCurrency(previewADR, cur)}/día</strong> · Por
+                ciclo: <strong className="text-white">{formatCurrency(previewCycleRequired, cur)}</strong>
               </span>
               <span>
-                Disponible (IND): <strong className="text-white">{formatCurrency(analysis.netAvailableIncome, cur)}</strong>
+                Disponible (IND):{' '}
+                <strong className="text-white">
+                  {formatCurrency(analysis.netAvailableIncome, cur)}
+                </strong>
               </span>
             </div>
             {!previewViable && (

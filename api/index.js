@@ -43026,10 +43026,11 @@ function runFinancialProjectionEngine(params) {
   let totalDailyRequiredSavings = new decimal_default(0);
   for (const goal of goals) {
     const targetAmount = new decimal_default(goal.target_amount || 0);
-    const baseSavedAmount = new decimal_default(goal.saved_amount || 0);
+    const baseSavedAmount = decimal_default.max(new decimal_default(0), new decimal_default(goal.saved_amount || 0));
+    const netAmountToFinance = decimal_default.max(new decimal_default(0), targetAmount.sub(baseSavedAmount));
     const allocationPct = new decimal_default(goal.allocation_pct ?? 100);
     const DTM = calculateTotalGoalDays(goal.duration_value, goal.duration_unit);
-    const ADR = DTM.gt(0) ? targetAmount.div(DTM) : new decimal_default(0);
+    const ADR = DTM.gt(0) ? netAmountToFinance.div(DTM) : new decimal_default(0);
     const goalCycleRequiredSavings = ADR.mul(cycleDays);
     const goalMonthlyRequiredSavings = ADR.mul(30);
     totalCycleRequiredSavings = totalCycleRequiredSavings.add(goalCycleRequiredSavings);
@@ -43053,14 +43054,14 @@ function runFinancialProjectionEngine(params) {
         );
       }
     }
-    const scheduledSavingsElapsed = ADR.mul(scheduledDaysElapsed).add(baseSavedAmount);
+    const scheduledSavingsFromChecklists = ADR.mul(scheduledDaysElapsed);
+    const scheduledSavingsElapsed = scheduledSavingsFromChecklists.add(baseSavedAmount);
     const ARA = decimal_default.max(
       new decimal_default(0),
       scheduledSavingsElapsed.add(extraSavings).sub(overspentAmount)
     );
     const SRM = decimal_default.max(new decimal_default(0), targetAmount.sub(ARA));
-    const effectiveElapsedDays = ADR.gt(0) ? scheduledSavingsElapsed.div(ADR) : new decimal_default(0);
-    const originalRemainingDays = decimal_default.max(new decimal_default(0), DTM.sub(effectiveElapsedDays));
+    const originalRemainingDays = decimal_default.max(new decimal_default(0), DTM.sub(scheduledDaysElapsed));
     const estimatedRealRemainingDays = ADR.gt(0) ? SRM.div(ADR) : new decimal_default(0);
     const variationInDays = originalRemainingDays.sub(estimatedRealRemainingDays);
     const temporalBreakdown = buildTemporalDeltaBreakdown(variationInDays);
@@ -43076,9 +43077,9 @@ function runFinancialProjectionEngine(params) {
     const isViable = IND.gt(0) && goalCycleRequiredSavings.lte(allocatedIND);
     let minRealisticDays = DTM.toNumber();
     if (allocatedDailyIND.gt(0)) {
-      minRealisticDays = Math.ceil(targetAmount.div(allocatedDailyIND).toNumber());
+      minRealisticDays = Math.max(1, Math.ceil(netAmountToFinance.div(allocatedDailyIND).toNumber()));
     } else if (dailyIND.gt(0)) {
-      minRealisticDays = Math.ceil(targetAmount.div(dailyIND).toNumber());
+      minRealisticDays = Math.max(1, Math.ceil(netAmountToFinance.div(dailyIND).toNumber()));
     }
     const minRealisticWeeks = Number((minRealisticDays / 7).toFixed(1));
     const minRealisticMonths = Number((minRealisticDays / 30).toFixed(1));

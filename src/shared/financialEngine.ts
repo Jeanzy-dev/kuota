@@ -308,14 +308,15 @@ export function runFinancialProjectionEngine(params: {
 
   for (const goal of goals) {
     const targetAmount = new Decimal(goal.target_amount || 0);
-    const baseSavedAmount = new Decimal(goal.saved_amount || 0);
+    const baseSavedAmount = Decimal.max(new Decimal(0), new Decimal(goal.saved_amount || 0));
+    const netAmountToFinance = Decimal.max(new Decimal(0), targetAmount.sub(baseSavedAmount));
     const allocationPct = new Decimal(goal.allocation_pct ?? 100);
 
     // 2. Días Totales de la Meta (DTM) = Conversión del tiempo previsto a días (Semanas × 7 | Meses × 30)
     const DTM = calculateTotalGoalDays(goal.duration_value, goal.duration_unit);
 
-    // 3. Ahorro Diario Requerido (ADR) = Precio de la Meta / DTM
-    const ADR = DTM.gt(0) ? targetAmount.div(DTM) : new Decimal(0);
+    // 3. Ahorro Diario Requerido (ADR) = (Precio de la Meta - Ahorro Inicial) / DTM
+    const ADR = DTM.gt(0) ? netAmountToFinance.div(DTM) : new Decimal(0);
 
     // 4. Ahorro Requerido por Ciclo = ADR × Días del Ciclo (15 para quincenal, 30 para mensual)
     const goalCycleRequiredSavings = ADR.mul(cycleDays);
@@ -351,7 +352,8 @@ export function runFinancialProjectionEngine(params: {
     }
 
     // Ahorro Programado Transcurrido = (ADR * días de períodos completados en checklist) + abono inicial base
-    const scheduledSavingsElapsed = ADR.mul(scheduledDaysElapsed).add(baseSavedAmount);
+    const scheduledSavingsFromChecklists = ADR.mul(scheduledDaysElapsed);
+    const scheduledSavingsElapsed = scheduledSavingsFromChecklists.add(baseSavedAmount);
 
     // Acumulado Real Ahorrado (ARA) = Ahorro Programado Transcurrido + Ahorros Extra − Excesos de Gasto
     const ARA = Decimal.max(
@@ -362,15 +364,13 @@ export function runFinancialProjectionEngine(params: {
     // Saldo Restante para la Meta (SRM) = Precio de la Meta − ARA
     const SRM = Decimal.max(new Decimal(0), targetAmount.sub(ARA));
 
-    // Días Restantes Originales = DTM - días transcurridos equivalentes al ahorro programado
-    const effectiveElapsedDays = ADR.gt(0) ? scheduledSavingsElapsed.div(ADR) : new Decimal(0);
-    const originalRemainingDays = Decimal.max(new Decimal(0), DTM.sub(effectiveElapsedDays));
+    // Días Restantes Originales = DTM - días transcurridos en checklists
+    const originalRemainingDays = Decimal.max(new Decimal(0), DTM.sub(scheduledDaysElapsed));
 
     // Días Reales Restantes Estimados = SRM / Ahorro Diario Requerido (ADR)
     const estimatedRealRemainingDays = ADR.gt(0) ? SRM.div(ADR) : new Decimal(0);
 
     // Variación en Días (Δt) = Días Restantes Originales − Días Reales Restantes Estimados
-    // Nota matemática: (DTM - Programado/ADR) - (Meta - (Programado + Extra - Exceso))/ADR = (Extra - Exceso) / ADR
     const variationInDays = originalRemainingDays.sub(estimatedRealRemainingDays);
 
     const temporalBreakdown = buildTemporalDeltaBreakdown(variationInDays);
@@ -390,12 +390,12 @@ export function runFinancialProjectionEngine(params: {
     const allocatedDailyIND = dailyIND.mul(allocationPct).div(100);
     const isViable = IND.gt(0) && goalCycleRequiredSavings.lte(allocatedIND);
 
-    // Plazo mínimo realista si el usuario destinara el 80% de su IND disponible (dejando 20% para gasto libre mínimo) o 100% del IND
+    // Plazo mínimo realista sobre el monto neto restante a financiar (targetAmount - baseSavedAmount)
     let minRealisticDays = DTM.toNumber();
     if (allocatedDailyIND.gt(0)) {
-      minRealisticDays = Math.ceil(targetAmount.div(allocatedDailyIND).toNumber());
+      minRealisticDays = Math.max(1, Math.ceil(netAmountToFinance.div(allocatedDailyIND).toNumber()));
     } else if (dailyIND.gt(0)) {
-      minRealisticDays = Math.ceil(targetAmount.div(dailyIND).toNumber());
+      minRealisticDays = Math.max(1, Math.ceil(netAmountToFinance.div(dailyIND).toNumber()));
     }
     const minRealisticWeeks = Number((minRealisticDays / 7).toFixed(1));
     const minRealisticMonths = Number((minRealisticDays / 30).toFixed(1));

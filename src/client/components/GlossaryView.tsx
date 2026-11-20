@@ -55,11 +55,11 @@ export const GlossaryView: React.FC<GlossaryViewProps> = ({ workspace }) => {
       category: 'Ritmo de Ahorro',
       icon: PiggyBank,
       meaning:
-        'Es la cuota diaria exacta que debes reservar para alcanzar el valor total de tu meta exactamente en la fecha prevista. También sirve para medir cuántos días ganas o pierdes cuando ahorras extra o gastas de más.',
-      formula: 'ADR = Precio Objetivo de la Meta / DTM',
+        'Es la cuota diaria exacta que debes reservar para alcanzar el monto pendiente de tu meta (descontando cualquier ahorro inicial previo) exactamente en la fecha prevista. También sirve para medir cuántos días ganas o pierdes cuando ahorras extra o gastas de más.',
+      formula: 'ADR = (Precio Objetivo − Ahorro Inicial) / DTM',
       currentValue: `${formatCurrency(analysis.totalDailyRequiredSavings, cur)} / día`,
       calculationDetail: primaryGoal
-        ? `${formatCurrency(primaryGoal.targetAmount, cur)} / ${
+        ? `${formatCurrency(primaryGoal.targetAmount, cur)} (neto a financiar) / ${
             primaryGoal.totalGoalDays
           } días = ${formatCurrency(primaryGoal.dailyRequiredSavings, cur)}/día`
         : 'Crea una meta para ver el cálculo',
